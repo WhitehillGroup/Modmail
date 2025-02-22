@@ -45,7 +45,7 @@ class Plugin:
             self.name = name
             self.local = False
             self.branch = branch if branch is not None else "master"
-            self.url = f"https://github.com/{user}/{repo}/archive/{self.branch}.zip"
+            self.url = f"https://api.github.com/repos/{user}/{repo}/zipball/{self.branch}"
             self.link = f"https://github.com/{user}/{repo}/tree/{self.branch}/{name}"
 
     @property
@@ -186,6 +186,9 @@ class Plugins(commands.Cog):
             logger.debug("Loading cached %s.", plugin.cache_path)
         else:
             headers = {}
+            headers["Accept"] = "application/vnd.github+json"
+            headers["X-GitHub-Api-Version"] = "2022-11-28"
+            
             github_token = self.bot.config["github_token"]
             if github_token is not None:
                 headers["Authorization"] = f"token {github_token}"
