@@ -188,7 +188,6 @@ class Plugins(commands.Cog):
             headers = {}
             headers["Accept"] = "application/vnd.github+json"
             headers["X-GitHub-Api-Version"] = "2022-11-28"
-            
             github_token = self.bot.config["github_token"]
             if github_token is not None:
                 headers["Authorization"] = f"token {github_token}"
