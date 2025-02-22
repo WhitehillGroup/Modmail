@@ -45,7 +45,8 @@ class Plugin:
             self.name = name
             self.local = False
             self.branch = branch if branch is not None else "master"
-            self.url = f"https://api.github.com/repos/{user}/{repo}/zipball/{self.branch}"
+            self.url = f"https://github.com/{user}/{repo}/archive/{self.branch}.zip"
+            self.api_url = f"https://api.github.com/repos/{user}/{repo}/zipball/{self.branch}"
             self.link = f"https://github.com/{user}/{repo}/tree/{self.branch}/{name}"
 
     @property
@@ -172,22 +173,32 @@ class Plugins(commands.Cog):
         self._ready_event.set()
         await self.bot.config.update()
 
-    async def download_plugin(self, plugin, force=False):
-        if plugin.abs_path.exists() and (not force or plugin.local):
-            return
-
-        if plugin.local:
-            raise InvalidPluginError(f"Local plugin {plugin} not found!")
-
-        plugin.abs_path.mkdir(parents=True, exist_ok=True)
-
-        if plugin.cache_path.exists() and not force:
-            plugin_io = plugin.cache_path.open("rb")
-            logger.debug("Loading cached %s.", plugin.cache_path)
-        else:
+    async def fetch_plugin(self, plugin, useApi=False):
+        if useApi:
             headers = {}
             headers["Accept"] = "application/vnd.github+json"
             headers["X-GitHub-Api-Version"] = "2022-11-28"
+            github_token = self.bot.config["github_token"]
+            if github_token is not None:
+                headers["Authorization"] = f"token {github_token}"
+
+            async with self.bot.session.get(plugin.api_url, headers=headers) as resp:
+                logger.debug("Downloading %s.", plugin.api_url)
+                raw = await resp.read()
+
+                try:
+                    raw = await resp.text()
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    if raw == "Not Found":
+                        raise InvalidPluginError("Plugin not found")
+                    else:
+                        raise InvalidPluginError("Invalid download received, non-bytes object")
+
+                return raw
+        else:
+            headers = {}
             github_token = self.bot.config["github_token"]
             if github_token is not None:
                 headers["Authorization"] = f"token {github_token}"
@@ -201,10 +212,24 @@ class Plugins(commands.Cog):
                 except UnicodeDecodeError:
                     pass
                 else:
-                    if raw == "Not Found":
-                        raise InvalidPluginError("Plugin not found")
-                    else:
-                        raise InvalidPluginError("Invalid download received, non-bytes object")
+                    return await self.fetch_plugin(plugin, useApi=True)
+
+                return raw
+
+    async def download_plugin(self, plugin, force=False):
+        if plugin.abs_path.exists() and (not force or plugin.local):
+            return
+
+        if plugin.local:
+            raise InvalidPluginError(f"Local plugin {plugin} not found!")
+
+        plugin.abs_path.mkdir(parents=True, exist_ok=True)
+
+        if plugin.cache_path.exists() and not force:
+            plugin_io = plugin.cache_path.open("rb")
+            logger.debug("Loading cached %s.", plugin.cache_path)
+        else:
+            raw = await self.fetch_plugin(plugin)
 
             plugin_io = io.BytesIO(raw)
             if not plugin.cache_path.parent.exists():
