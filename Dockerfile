@@ -2,6 +2,8 @@ FROM python:3.11-slim-bookworm as base
 
 RUN apt-get update &&  \
     apt-get install --no-install-recommends -y \
+    # Install cv2 dependencies
+    ffmpeg libsm6 libxext6 \
     # Install Tesseract OCR.
     tesseract-ocr \
     # Install CairoSVG dependencies.
