@@ -602,7 +602,7 @@ class Modmail(commands.Cog):
     @commands.command(aliases=["sub"])
     @checks.has_permissions(PermissionLevel.SUPPORTER)
     @checks.thread_only()
-    async def subscribe(self, ctx, *, user_or_role: Union[discord.Role, User, str.lower, None] = None):
+    async def subscribe(self, ctx, *):
         """
         Notify a user, role, or yourself for every thread message received.
 
@@ -612,7 +612,7 @@ class Modmail(commands.Cog):
         `@here` and `@everyone` can be substituted with `here` and `everyone`.
         `user_or_role` may be a user ID, mention, name, role ID, mention, name, "everyone", or "here".
         """
-        mention = self.parse_user_or_role(ctx, user_or_role)
+        mention = self.parse_user_or_role(ctx, None)
         if mention is None:
             raise commands.BadArgument(f"{user_or_role} is not a valid user or role.")
 
