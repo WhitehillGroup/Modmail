@@ -602,15 +602,11 @@ class Modmail(commands.Cog):
     @commands.command(aliases=["sub"])
     @checks.has_permissions(PermissionLevel.SUPPORTER)
     @checks.thread_only()
-    async def subscribe(self, ctx, *):
+    async def subscribe(self, ctx):
         """
-        Notify a user, role, or yourself for every thread message received.
+        Notify yourself for every thread message received.
 
         You will be pinged for every thread message received until you unsubscribe.
-
-        Leave `user_or_role` empty to subscribe yourself.
-        `@here` and `@everyone` can be substituted with `here` and `everyone`.
-        `user_or_role` may be a user ID, mention, name, role ID, mention, name, "everyone", or "here".
         """
         mention = self.parse_user_or_role(ctx, None)
         if mention is None:
